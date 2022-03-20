@@ -56,7 +56,7 @@
 		<script>
 
 
-		const START_SPEED = .08;
+		const START_SPEED = -.08;
 		var camera, scene, renderer, player;
 		var cubes = [];
 		var mouse = new THREE.Vector2();
@@ -65,15 +65,16 @@
 		var speed = START_SPEED;
 		var score = 0;
 		var highScore = 0;
+		var gameOver = false;
+
+		var geometry = new THREE.BoxGeometry();
+		var material = new THREE.MeshBasicMaterial({ color: 0x00ff00});
 
 		init()
 		animate();
 
 
 		function init() {
-
-
-
 
 			// renderer
 
@@ -87,22 +88,31 @@
 			camera = new THREE.PerspectiveCamera( 70, container.clientWidth / container.clientHeight, 1, 1000 );
 
 
-			const geometry = new THREE.BoxGeometry();
-			const material = new THREE.MeshBasicMaterial({ color: 0x00ff00});
-			for (let i = 0; i < count; i++) {
+
+			createCubes(count);
+
+			createPlayer();
+
+
+			container.addEventListener( 'mousemove', onMouseMove, false );
+		}
+
+		function createPlayer() {
+			player = new THREE.Mesh( geometry,  new THREE.MeshBasicMaterial({ color: 0xff0000}));
+			scene.add( player );
+			console.log("creating player");
+		}
+
+		function createCubes(number) {
+			for (let i = 0; i < number; i++) {
 				const cube = new THREE.Mesh(geometry, material);
 				scene.add(cube);
 				cube.position.set(radius/2 - radius * Math.random(),
 													radius/2 - radius * Math.random(),
 													0.0);
 				cubes.push(cube);
+				console.log("creating cube");
 			}
-
-
-			player = new THREE.Mesh( geometry,  new THREE.MeshBasicMaterial({ color: 0xff0000}));
-			scene.add( player );
-
-			container.addEventListener( 'mousemove', onMouseMove, false );
 		}
 
 			function onMouseMove( event ) {
@@ -119,6 +129,18 @@
 			function animate() {
 				requestAnimationFrame(animate);
 
+				if(gameOver == true) {
+					temp = [];
+					cubes = temp;
+					count = 100;
+					gameOver = false;
+					while(scene.children.length > 0){
+    				scene.remove(scene.children[0]);
+					}
+					createCubes(count);
+					createPlayer();
+				}
+
 				for (var vertexIndex = 0; vertexIndex < player.geometry.attributes.position.array.length; vertexIndex++)
 				{
 				    var localVertex = new THREE.Vector3().fromBufferAttribute(player.geometry.attributes.position, vertexIndex).clone();
@@ -130,9 +152,15 @@
 				    if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() )
 				    {
 				        console.log("Game over");
+								gameOver = true;
 								score = 0;
 								speed = START_SPEED;
 				    }
+				}
+
+				if (score % 1000 == 0){
+					createCubes(10);
+					speed *= -1;
 				}
 
 				for (var i = 0; i < cubes.length; i++) {
@@ -143,9 +171,16 @@
 					cubes[i].position.y = 50;
 					cubes[i].position.x = radius/2 - radius * Math.random();
 				}
+				if (cubes[i].position.y > 50) {
+					cubes[i].position.y = -50;
+					cubes[i].position.x = radius/2 - radius * Math.random();
+				}
 			}
 
-			speed += .0001;
+			if (speed > 0)
+				speed += .0001;
+			else
+				speed -= .0001;
 			score += 1;
 			document.getElementById('score').innerHTML = "Score: " + score.toString();
 			if (score > highScore) {
@@ -154,7 +189,12 @@
 			}
 
 			renderer.render(scene, camera);
+
+
+
 			}
+
+
 
 		</script>
 	</body>
